@@ -10,13 +10,8 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "Welcome to the Flask API! Use the defined endpoints to interact with the application."
+    return "Welcome to the Flask API! Use the endpoints to predict stock prices."
 
-@app.route('/favicon.ico')
-def favicon():
-    return '', 204
-
-# (Existing endpoints below...)
 @app.route('/fetch-stock-data', methods=['GET'])
 def fetch_stock():
     ticker_symbol = request.args.get('ticker', 'AAPL')
@@ -26,55 +21,69 @@ def fetch_stock():
     try:
         data = fetch_stock_data(ticker_symbol, start_date, end_date)
         if data is not None:
-            return jsonify({"message": "Stock data fetched successfully", "data": data.to_dict(orient='records')}), 200
+            return jsonify({"message": f"Stock data for {ticker_symbol} fetched successfully.", 
+                            "data": data.to_dict(orient='records')}), 200
         else:
-            return jsonify({"message": "No data found"}), 404
+            return jsonify({"message": "No data found for the specified stock"}), 404
     except Exception as e:
         return jsonify({"message": "Error fetching stock data", "error": str(e)}), 500
 
-# Endpoint to train the Linear Regression model
 @app.route('/train-lr', methods=['POST'])
 def train_lr():
     try:
-        csv_file = request.files['file']
-        data = pd.read_csv(csv_file)
-        train_linear_regression_model(data)
-        return jsonify({"message": "Linear Regression model trained successfully"}), 200
+        ticker_symbol = request.form.get('ticker', 'AAPL')
+        data_path = f"data/{ticker_symbol}_stock_data.csv"
+        if not os.path.exists(data_path):
+            return jsonify({"message": f"No data found for {ticker_symbol}. Fetch data first."}), 400
+        
+        data = pd.read_csv(data_path)
+        train_linear_regression_model(data, ticker_symbol)  # Pass ticker_symbol
+        return jsonify({"message": f"Linear Regression model trained successfully for {ticker_symbol}."}), 200
     except Exception as e:
         return jsonify({"message": "Error training Linear Regression model", "error": str(e)}), 500
 
-# Endpoint to train the LSTM model
 @app.route('/train-lstm', methods=['POST'])
 def train_lstm():
     try:
-        csv_file = request.files['file']
-        data = pd.read_csv(csv_file)
-        train_lstm_model(data)
-        return jsonify({"message": "LSTM model trained successfully"}), 200
+        ticker_symbol = request.form.get('ticker', 'AAPL')
+        data_path = f"data/{ticker_symbol}_stock_data.csv"
+        if not os.path.exists(data_path):
+            return jsonify({"message": f"No data found for {ticker_symbol}. Fetch data first."}), 400
+        
+        data = pd.read_csv(data_path)
+        train_lstm_model(data, ticker_symbol)  # Pass ticker_symbol
+        return jsonify({"message": f"LSTM model trained successfully for {ticker_symbol}."}), 200
     except Exception as e:
         return jsonify({"message": "Error training LSTM model", "error": str(e)}), 500
 
-# Endpoint to combine predictions
 @app.route('/combine-predictions', methods=['GET'])
 def combine():
     try:
+        ticker_symbol = request.args.get('ticker', 'AAPL')
+        lr_path = f"data/{ticker_symbol}_lr_predictions.csv"
+        lstm_path = f"data/{ticker_symbol}_lstm_predictions.csv"
+        if not (os.path.exists(lr_path) and os.path.exists(lstm_path)):
+            return jsonify({"message": f"Predictions for {ticker_symbol} are missing. Train models first."}), 400
+        
         combine_predictions()
-        return jsonify({"message": "Predictions combined successfully"}), 200
+        return jsonify({"message": f"Predictions combined successfully for {ticker_symbol}."}), 200
     except Exception as e:
         return jsonify({"message": "Error combining predictions", "error": str(e)}), 500
 
-# Endpoint to fetch combined predictions
 @app.route('/predictions', methods=['GET'])
 def get_predictions():
     try:
-        combined_path = 'data/combined_predictions.csv'
+        ticker_symbol = request.args.get('ticker', 'AAPL')
+        combined_path = f"data/{ticker_symbol}_combined_predictions.csv"
         if os.path.exists(combined_path):
             data = pd.read_csv(combined_path)
-            return jsonify({"message": "Combined predictions fetched successfully", "data": data.to_dict(orient='records')}), 200
+            return jsonify({"message": f"Combined predictions for {ticker_symbol} fetched successfully.", 
+                            "data": data.to_dict(orient='records')}), 200
         else:
-            return jsonify({"message": "Combined predictions not found"}), 404
+            return jsonify({"message": f"Combined predictions not found for {ticker_symbol}."}), 404
     except Exception as e:
         return jsonify({"message": "Error fetching combined predictions", "error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
+

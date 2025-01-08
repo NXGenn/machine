@@ -18,25 +18,25 @@ def fetch_stock_data(ticker_symbol, start_date, end_date=None):
     # Set end date to current date if not specified
     if end_date is None:
         end_date = datetime.now().strftime('%Y-%m-%d')
-    
+
     print(f"Fetching data for {ticker_symbol} from {start_date} to {end_date}...")
 
     # Initialize yfinance ticker object
     ticker = yf.Ticker(ticker_symbol)
-    
+
     try:
         # Fetch historical market data
         df = ticker.history(start=start_date, end=end_date)
-        
+
         if df.empty:
             raise ValueError(f"No data found for {ticker_symbol} in the given date range.")
-        
+
         # Reset index to make Date a column
         df = df.reset_index()
-        
+
         # Drop unnecessary columns
         df = df.drop(columns=[col for col in ['Dividends', 'Stock Splits'] if col in df.columns])
-        
+
         # Fetch additional financial metrics
         financial_metrics = {
             'EPS': ticker.info.get('trailingEps'),
@@ -44,23 +44,23 @@ def fetch_stock_data(ticker_symbol, start_date, end_date=None):
             'ROE': ticker.info.get('returnOnEquity'),
             'P/E': ticker.info.get('trailingPE')
         }
-        
+
         # Add financial metrics to the DataFrame
         for metric, value in financial_metrics.items():
             df[metric] = value
-        
+
         # Reorder columns
         price_cols = ['Adj Close', 'Close', 'High', 'Low', 'Open', 'Volume']
-        price_cols = [col for col in price_cols if col in df.columns]  # Ensure they exist in the DataFrame
+        price_cols = [col for col in price_cols if col in df.columns]
         final_cols = ['Date'] + price_cols + list(financial_metrics.keys())
         df = df[final_cols]
-        
-        # Save to CSV
+
+        # Save to CSV with ticker-specific filename
         save_to_csv(df, ticker_symbol)
 
         print(f"Data fetched successfully: {df.shape[0]} rows, {df.shape[1]} columns.")
         return df
-    
+
     except Exception as e:
         print(f"Error fetching data for {ticker_symbol}: {e}")
         return None
@@ -76,12 +76,13 @@ def save_to_csv(df, ticker_symbol):
     data_dir = 'data'
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)
-    
-    filename = "stock_data.csv"
+
+    filename = f"{ticker_symbol}_stock_data.csv"
     filepath = os.path.join(data_dir, filename)
-    
+
     df.to_csv(filepath, index=False)
     print(f"Stock data saved to {filepath}")
+
 
 # Example usage
 if __name__ == "__main__":
