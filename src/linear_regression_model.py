@@ -6,13 +6,12 @@ import joblib
 import os
 import matplotlib.pyplot as plt
 
-def train_linear_regression_model(data, ticker_symbol):
+def train_linear_regression_model(data):
     """
     Train and evaluate a linear regression model on the given stock data.
 
     Args:
         data (pd.DataFrame): The stock data to train the model on.
-        ticker_symbol (str): The stock ticker symbol for saving predictions.
     """
     # Select features and target variable
     features = ['Close', 'High', 'Low', 'Open', 'Volume', 'EPS', 'Revenue', 'ROE', 'P/E']
@@ -33,17 +32,34 @@ def train_linear_regression_model(data, ticker_symbol):
     mse = mean_squared_error(y_test, y_pred)
     print(f'Mean Squared Error: {mse}')
 
-    # Save the model
-    model_path = f'models/{ticker_symbol}_regression_model.pkl'
+    # Plot the results
+    plt.figure(figsize=(10, 6))
+    plt.scatter(y_test, y_pred, alpha=0.5)
+    plt.xlabel('Actual Close Prices')
+    plt.ylabel('Predicted Close Prices')
+    plt.title('Actual vs Predicted Close Prices using Linear Regression')
+    plt.savefig('images/lr_actual_vs_predicted.png')
+    plt.show()
+
+    # Save the trained model
+    model_path = 'models/regression_model.pkl'
     os.makedirs(os.path.dirname(model_path), exist_ok=True)
     joblib.dump(model, model_path)
 
-    # Predict future stock prices (example with last row repeated)
-    future_data = pd.DataFrame([X.iloc[-1]] * 3)  # Example of future predictions
+    # Predict future stock prices
+    future_dates = pd.date_range(start=data['Date'].max(), periods=30, freq='B')  # Predict for the next 30 business days
+    future_data = pd.DataFrame(index=future_dates, columns=features)
+
+    # Assuming the future data is not available, we will use the last available data for prediction
+    last_available_data = data[features].iloc[-1]
+
+    for feature in features:
+        future_data[feature] = last_available_data[feature]
+
     future_predictions = model.predict(future_data)
 
-    # Save future predictions
+    # Save future predictions to a CSV file
     future_data['Predicted Close'] = future_predictions
-    future_data.to_csv(f'data/{ticker_symbol}_lr_predictions.csv', index=False)
-    print(f"Linear Regression predictions saved to 'data/{ticker_symbol}_lr_predictions.csv'")
+    future_data.to_csv('data/future_predictions_lr.csv')
 
+    print("Future stock price predictions saved to 'future_predictions_using_lr.csv'")
