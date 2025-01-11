@@ -4,6 +4,7 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 import joblib
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 
 def train_linear_regression_model(data):
@@ -33,13 +34,31 @@ def train_linear_regression_model(data):
     print(f'Mean Squared Error: {mse}')
 
     # Plot the results
+    # Plot the results with the best fit line
     plt.figure(figsize=(10, 6))
-    plt.scatter(y_test, y_pred, alpha=0.5)
+
+    # Scatter plot for actual vs predicted values
+    plt.scatter(y_test, y_pred, alpha=0.5, label='Actual vs Predicted', color='blue')
+
+    # Plot the best fit line
+    best_fit = LinearRegression()
+    best_fit.fit(y_test.values.reshape(-1, 1), y_pred)  # Train a line to fit the actual vs predicted
+    line_x = np.linspace(y_test.min(), y_test.max(), 100)
+    line_y = best_fit.predict(line_x.reshape(-1, 1))
+    plt.plot(line_x, line_y, color='green', label='Best Fit Line')
+
+    # Plot the predicted trend
+    sorted_indices = np.argsort(y_test)
+    plt.plot(np.array(y_test)[sorted_indices], np.array(y_pred)[sorted_indices], color='red', label='Predicted Trend')
+
+    # Configure plot
     plt.xlabel('Actual Close Prices')
     plt.ylabel('Predicted Close Prices')
     plt.title('Actual vs Predicted Close Prices using Linear Regression')
+    plt.legend()
     plt.savefig('images/lr_actual_vs_predicted.png')
     plt.show()
+
 
     # Save the trained model
     model_path = 'models/regression_model.pkl'

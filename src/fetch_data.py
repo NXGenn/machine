@@ -87,6 +87,6 @@ def save_to_csv(df, ticker_symbol):
 if __name__ == "__main__":
     ticker_symbol = 'AAPL' #input("Enter a Stock Ticker Symbol (e.g., AAPl): ")  # Example: Apple Inc.
     start_date = '2010-01-01' #input("Enter the start date (YYYY-MM-DD): ")  # Start date
-    end_date = None  # Use None for the current date (optional)
+    end_date = None
     
     fetch_stock_data(ticker_symbol, start_date, end_date)

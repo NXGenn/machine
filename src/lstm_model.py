@@ -7,6 +7,7 @@ import os
 # import joblib
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
+from tensorflow.keras.callbacks import EarlyStopping
 
 def train_lstm_model(data):
     """
@@ -50,7 +51,15 @@ def train_lstm_model(data):
     model.compile(optimizer='adam', loss='mean_squared_error')
 
     # Train the model
-    model.fit(X_train, y_train, batch_size=1, epochs=1)
+    early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+    model.fit(
+    X_train,
+    y_train,
+    validation_data=(X_test, y_test),
+    epochs=500,
+    batch_size=32,
+    callbacks=[early_stopping]
+)
 
     # Make predictions
     y_pred = model.predict(X_test)
